@@ -2,6 +2,7 @@ package ru.panyukovnn.calendarbot.scheduler
 
 import com.google.api.client.util.DateTime
 import com.google.api.services.calendar.model.Event
+import jakarta.annotation.PostConstruct
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
@@ -22,6 +23,7 @@ class SendingScheduler(
 
     val FRONT_DT_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
+    @PostConstruct
     @Scheduled(cron = "\${calendar-sender.cron}")
     fun sendEvents() {
         val events = eventsFetcher.fetchDayEvens()

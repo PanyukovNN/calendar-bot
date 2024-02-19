@@ -7,4 +7,4 @@ services:
     env_file:
       - deploy/config.env
     volumes:
-      - /tmp/calendar-bot/tokens/:tokens
+      - /tmp/calendar-bot/tokens/:/tmp/calendar-bot/tokens

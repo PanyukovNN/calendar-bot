@@ -1,8 +1,9 @@
 FROM openjdk:21-jdk
 
-COPY ./build/libs/mpparser.jar /mpparser.jar
+COPY ./build/libs/calendar-bot.jar /calendar-bot.jar
+COPY ./credentials.json /credentials.json
 
 EXPOSE 8080
 ENV TZ=Europe/Moscow
 
-ENTRYPOINT ["java", "-jar", "/mpparser.jar"]
+ENTRYPOINT ["java", "-jar", "/calendar-bot.jar"]
