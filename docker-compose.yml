@@ -4,5 +4,9 @@ services:
   calendar-bot:
     build: .
     container_name: calendar-bot
+    ports:
+      - "127.0.0.1:8009:8009"
     env_file:
       - deploy/config.env
+    volumes:
+      - /tmp/calendar-bot/tokens:/tmp/calendar-bot/tokens

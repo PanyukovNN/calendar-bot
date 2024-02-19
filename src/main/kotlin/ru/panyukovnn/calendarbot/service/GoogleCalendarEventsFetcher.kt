@@ -26,7 +26,7 @@ import java.time.ZoneId
 class GoogleCalendarEventsFetcher {
 
     private val JSON_FACTORY: JsonFactory = GsonFactory.getDefaultInstance()
-    private val TOKENS_DIRECTORY_PATH = "tokens"
+    private val TOKENS_DIRECTORY_PATH = "/tmp/calendar-bot/tokens"
     private val SCOPES = listOf(CalendarScopes.CALENDAR_READONLY)
     private val CREDENTIALS_FILE_PATH = "credentials.json"
 
@@ -78,7 +78,7 @@ class GoogleCalendarEventsFetcher {
             .setDataStoreFactory(FileDataStoreFactory(File(TOKENS_DIRECTORY_PATH)))
             .setAccessType("offline")
             .build()
-        val receiver = LocalServerReceiver.Builder().build()
+        val receiver = LocalServerReceiver.Builder().setPort(8009).build()
         return AuthorizationCodeInstalledApp(flow, receiver).authorize("user")
     }
 }
