@@ -1,7 +1,7 @@
 version: '3.3'
 
 services:
-  mpparser:
+  calendar-bot:
     build: .
     container_name: calendar-bot
     env_file:
