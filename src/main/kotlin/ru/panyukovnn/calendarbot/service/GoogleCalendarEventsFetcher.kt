@@ -78,7 +78,7 @@ class GoogleCalendarEventsFetcher {
             .setDataStoreFactory(FileDataStoreFactory(File(TOKENS_DIRECTORY_PATH)))
             .setAccessType("offline")
             .build()
-        val receiver = LocalServerReceiver.Builder().setPort(8888).build()
+        val receiver = LocalServerReceiver.Builder().setPort(8009).build()
         return AuthorizationCodeInstalledApp(flow, receiver).authorize("user")
     }
 }
