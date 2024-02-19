@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+bot:
+  name: ${TG_BOT_NAME}
+  token: ${TG_BOT_TOKEN}
+
+calendar-sender:
+  cron: 0 0 7 * * *
+  chat-id: -4181890815
