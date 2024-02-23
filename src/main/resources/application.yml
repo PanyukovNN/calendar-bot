@@ -6,5 +6,5 @@ bot:
   token: ${TG_BOT_TOKEN}
 
 calendar-sender:
-  cron: 0 0 7 * * *
+  cron: 0 0 23 * * *
   chat-id: -4181890815

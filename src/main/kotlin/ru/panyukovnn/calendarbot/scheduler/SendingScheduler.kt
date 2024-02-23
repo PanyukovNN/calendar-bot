@@ -8,9 +8,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import ru.panyukovnn.calendarbot.config.TgBotApi
 import ru.panyukovnn.calendarbot.property.CalendarSenderProperties
 import ru.panyukovnn.calendarbot.service.GoogleCalendarEventsFetcher
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.*
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -24,52 +22,83 @@ class SendingScheduler(
 
     @Scheduled(cron = "\${calendar-sender.cron}")
     fun sendEvents() {
-        val events = eventsFetcher.fetchDayEvens()
+        val now = LocalDateTime.now();
 
-        val messageLines = formatMessage(events)
+        val events = eventsFetcher.fetchDayEvens(now)
 
-        tgBotApi.execute(SendMessage.builder()
-            .text(messageLines.joinToString(separator = "\n"))
-            .parseMode("html")
-            .chatId(calendarSenderProperties.chatId!!)
-            .build())
+        val messageLines = formatMessage(events, now)
+
+        tgBotApi.execute(
+            SendMessage.builder()
+                .text(messageLines.joinToString(separator = "\n"))
+                .parseMode("html")
+                .chatId(calendarSenderProperties.chatId!!)
+                .build()
+        )
     }
 
-    private fun formatMessage(events: List<Event>): MutableList<String> {
+    private fun formatMessage(events: List<Event>, now: LocalDateTime): MutableList<String> {
         val messageLines = mutableListOf<String>()
-        messageLines.add("<b>" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + "</b>")
 
         if (events.isEmpty()) {
+            messageLines.add("<b>" + now.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + "</b>")
             messageLines.add("")
             messageLines.add("Событий нет")
         } else {
-            val noTimeEvents = events.filter {
-                it.start.dateTime == null || it.end.dateTime == null
+            val tomorrowMidnight = LocalDateTime.of(now.toLocalDate().plusDays(1), LocalTime.MIN)
+                .toInstant(ZoneOffset.of("+03:00"))
+                .toEpochMilli()
+
+            val todaysEvents = events.filter { isTodayEvent(it, tomorrowMidnight) }
+
+            if (!todaysEvents.isEmpty()) {
+                messageLines.add("<b>" + now.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + "</b>")
+
+                enrichMessageWithDayEvents(messageLines, todaysEvents)
             }
 
-            val hasTimeEvents = events.filter {
-                it.start.dateTime != null && it.end.dateTime != null
-            }
+            val tomorrowEvents = events.filter { !isTodayEvent(it, tomorrowMidnight) }
 
-            if (!noTimeEvents.isEmpty()) {
+            if (!tomorrowEvents.isEmpty()) {
                 messageLines.add("")
+                messageLines.add("<b>" + now.plusDays(1).format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + "</b>")
 
-                for (event in noTimeEvents) {
-                    messageLines.add(event.summary ?: "Нет заголовка")
-                }
-            }
-
-            for (event in hasTimeEvents) {
-                messageLines.add("")
-                messageLines.add(event.summary ?: "Нет заголовка")
-
-                val start = formatGoogleDateTime(event.start.dateTime)
-                val end = formatGoogleDateTime(event.end.dateTime)
-
-                messageLines.add("$start - $end")
+                enrichMessageWithDayEvents(messageLines, tomorrowEvents)
             }
         }
+
         return messageLines
+    }
+
+    fun isTodayEvent(event: Event, tomorrowMidnight: Long): Boolean {
+        return (event.start.dateTime != null && event.start.dateTime.value < tomorrowMidnight) ||
+                (event.start.date != null && event.start.date.value < tomorrowMidnight)
+    }
+
+    fun enrichMessageWithDayEvents(messageLines: MutableList<String>, dayEvents: List<Event>) {
+        val dateEvents = dayEvents
+            .filter { it.start.dateTime == null || it.end.dateTime == null }
+
+        val specificTimeEvents = dayEvents.filter {
+            it.start.dateTime != null && it.end.dateTime != null
+        }
+
+        if (!dateEvents.isEmpty()) {
+            messageLines.add("")
+
+            for (event in dateEvents) {
+                messageLines.add(event.summary ?: "Нет заголовка")
+            }
+        }
+
+        for (event in specificTimeEvents) {
+            messageLines.add("")
+
+            val start = formatGoogleDateTime(event.start.dateTime)
+            val end = formatGoogleDateTime(event.end.dateTime)
+
+            messageLines.add("$start - $end ${event.summary ?: "Нет заголовка"}")
+        }
     }
 
     fun formatGoogleDateTime(dateTime: DateTime?): String? {

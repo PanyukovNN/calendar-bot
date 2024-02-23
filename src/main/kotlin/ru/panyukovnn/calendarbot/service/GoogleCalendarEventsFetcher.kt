@@ -30,20 +30,18 @@ class GoogleCalendarEventsFetcher {
     private val SCOPES = listOf(CalendarScopes.CALENDAR_READONLY)
     private val CREDENTIALS_FILE_PATH = "credentials.json"
 
-    fun fetchDayEvens() : List<Event> {
+    fun fetchDayEvens(now: LocalDateTime): List<Event> {
         val HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport()
         val service = Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
             .setApplicationName("calendar-bot")
             .build()
 
-        val now = LocalDateTime.now()
-
-        val dayStart = DateTime(now.minusMinutes(1)
+        val start = DateTime(now.minusMinutes(1)
                 .atZone(ZoneId.systemDefault())
                 .toInstant()
                 .toEpochMilli()
         )
-        val dayEnd = DateTime(now.plusDays(1).plusMinutes(1)
+        val end = DateTime(now.plusDays(1).plusMinutes(1)
                 .atZone(ZoneId.systemDefault())
                 .toInstant()
                 .toEpochMilli()
@@ -58,8 +56,8 @@ class GoogleCalendarEventsFetcher {
         return calendars.flatMap {
             service.events()
                 .list(it.id)
-                .setTimeMin(dayStart)
-                .setTimeMax(dayEnd)
+                .setTimeMin(start)
+                .setTimeMax(end)
                 .setOrderBy("startTime")
                 .setSingleEvents(true)
                 .execute()
