@@ -18,7 +18,7 @@ class SendingScheduler(
     val tgBotApi: TgBotApi
 ) {
 
-    val FRONT_DT_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    val FRONT_DT_FORMATTER = DateTimeFormatter.ofPattern("HH:mm")
 
     @Scheduled(cron = "\${calendar-sender.cron}")
     fun sendEvents() {
@@ -50,11 +50,12 @@ class SendingScheduler(
                 .toEpochMilli()
 
             val todaysEvents = events.filter { isTodayEvent(it, tomorrowMidnight) }
+            val specificTimeTodayEvents = filterSpecificTimeEvents(todaysEvents)
 
-            if (!todaysEvents.isEmpty()) {
+            if (!specificTimeTodayEvents.isEmpty()) {
                 messageLines.add("<b>" + now.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + "</b>")
 
-                enrichMessageWithDayEvents(messageLines, todaysEvents)
+                enrichMessageWithSpecificTimeEvents(messageLines, specificTimeTodayEvents)
             }
 
             val tomorrowEvents = events.filter { !isTodayEvent(it, tomorrowMidnight) }
@@ -63,7 +64,8 @@ class SendingScheduler(
                 messageLines.add("")
                 messageLines.add("<b>" + now.plusDays(1).format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + "</b>")
 
-                enrichMessageWithDayEvents(messageLines, tomorrowEvents)
+                enrichMessageWithDateEvents(messageLines, tomorrowEvents)
+                enrichMessageWithSpecificTimeEvents(messageLines, tomorrowEvents)
             }
         }
 
@@ -75,13 +77,8 @@ class SendingScheduler(
                 (event.start.date != null && event.start.date.value < tomorrowMidnight)
     }
 
-    fun enrichMessageWithDayEvents(messageLines: MutableList<String>, dayEvents: List<Event>) {
-        val dateEvents = dayEvents
-            .filter { it.start.dateTime == null || it.end.dateTime == null }
-
-        val specificTimeEvents = dayEvents.filter {
-            it.start.dateTime != null && it.end.dateTime != null
-        }
+    fun enrichMessageWithDateEvents(messageLines: MutableList<String>, dayEvents: List<Event>) {
+        val dateEvents = filterDateEvents(dayEvents)
 
         if (!dateEvents.isEmpty()) {
             messageLines.add("")
@@ -90,6 +87,10 @@ class SendingScheduler(
                 messageLines.add(event.summary ?: "Нет заголовка")
             }
         }
+    }
+
+    fun enrichMessageWithSpecificTimeEvents(messageLines: MutableList<String>, dayEvents: List<Event>) {
+        val specificTimeEvents = filterSpecificTimeEvents(dayEvents)
 
         for (event in specificTimeEvents) {
             messageLines.add("")
@@ -111,4 +112,17 @@ class SendingScheduler(
             .toLocalDateTime()
             .format(FRONT_DT_FORMATTER);
     }
+
+    /**
+     * Извлекает события целого дня (например праздники)
+     */
+    fun filterDateEvents(dayEvents: List<Event>) = dayEvents
+            .filter { it.start.dateTime == null || it.end.dateTime == null }
+
+    /**
+     * Излвекает события с конкретным временем
+     */
+    fun filterSpecificTimeEvents(dayEvents: List<Event>) = dayEvents
+        .filter { it.start.dateTime != null && it.end.dateTime != null }
+
 }
