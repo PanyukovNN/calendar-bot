@@ -6,6 +6,7 @@ services:
     container_name: calendar-bot
     ports:
       - "127.0.0.1:8009:8009"
+      - "127.0.0.1:8010:8010"
     env_file:
       - deploy/config.env
     volumes:
